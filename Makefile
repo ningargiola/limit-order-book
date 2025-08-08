@@ -7,7 +7,7 @@ SRC = src/main.cpp src/order.cpp src/order_book.cpp
 OBJ = $(SRC:.cpp=.o)
 
 # Output binary name
-TARGET = xsh
+TARGET = lob
 
 # Default target
 all: $(TARGET)
