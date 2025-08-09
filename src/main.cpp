@@ -13,6 +13,7 @@
  */
 
  #include "order_book.h"
+ #include "logger.h"
  #include <iostream>
  #include <sstream>
  #include <string>
@@ -24,10 +25,37 @@
   *
   * Reads commands from stdin until "EXIT" is received.
   * Commands can be manually entered or piped in from a file/stream.
+  * 
+  * Supports command-line options:
+  *   --log-level <level>  Set logging level (error|warn|info|debug)
   *
+  * @param argc Number of command-line arguments
+  * @param argv Array of command-line argument strings
   * @return int Exit code (0 on success).
   */
- int main() {
+ int main(int argc, char* argv[]) {
+     // Parse command-line arguments
+     for (int i = 1; i < argc; i++) {
+         std::string arg = argv[i];
+         if (arg == "--log-level" && i + 1 < argc) {
+             std::string level = argv[++i];
+             if (!g_logger.setLevel(level)) {
+                 std::cerr << "Error: Invalid log level '" << level << "'. Valid levels: error|warn|info|debug" << std::endl;
+                 return 1;
+             }
+             g_logger.info("Log level set to: " + level);
+         } else if (arg == "--help" || arg == "-h") {
+             std::cout << "Usage: " << argv[0] << " [OPTIONS]\n";
+             std::cout << "Options:\n";
+             std::cout << "  --log-level <level>  Set logging level (error|warn|info|debug)\n";
+             std::cout << "  --help, -h           Show this help message\n";
+             return 0;
+         } else {
+             std::cerr << "Error: Unknown option '" << arg << "'. Use --help for usage information." << std::endl;
+             return 1;
+         }
+     }
+
      OrderBook book;
  
      // Directory for CSV exports
@@ -145,7 +173,7 @@
          // UNKNOWN COMMAND
          // ------------------------------------------------
          else {
-             std::cerr << "Unknown command: " << command << "\n";
+             g_logger.error("Unknown command: " + command);
          }
      }
  

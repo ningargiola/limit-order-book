@@ -10,6 +10,7 @@
  */
 
  #include "order_book.h"
+ #include "logger.h"
  #include <iostream>
  #include <algorithm>
  #include <optional>
@@ -65,7 +66,7 @@
      std::filesystem::create_directories(exportDir, ec); // Create folder if missing
      if (ec)
      {
-         std::cerr << "Warning: Could not create export directory: " << exportDir << "\n";
+         g_logger.warn("Could not create export directory: " + exportDir);
      }
  }
  
@@ -74,9 +75,14 @@
      // Validation: ignore invalid orders
      if (order.quantity <= 0)
      {
-         std::cerr << "Error: Order quantity must be positive.\n";
+         g_logger.error("Order quantity must be positive (received: " + std::to_string(order.quantity) + ")");
          return;
      }
+
+     g_logger.debug("Adding order - ID: " + std::to_string(order.id) + 
+                    ", Type: " + (order.type == OrderType::BUY ? "BUY" : "SELL") + 
+                    ", Price: " + std::to_string(order.price) + 
+                    ", Quantity: " + std::to_string(order.quantity));
  
      // Insert into correct side (bids or asks) maintaining list order
      if (order.type == OrderType::BUY)
@@ -101,11 +107,17 @@
  bool OrderBook::modifyOrder(int id, int newQty, double newPrice, long newTimestamp)
  {
      auto it = orderIndex.find(id);
-     if (it == orderIndex.end())
+     if (it == orderIndex.end()) {
+         g_logger.warn("Cannot modify order - Order ID " + std::to_string(id) + " not found");
          return false;
- 
+     }
+
+     g_logger.debug("Modifying order ID: " + std::to_string(id) + 
+                    ", New Price: " + std::to_string(newPrice) + 
+                    ", New Quantity: " + std::to_string(newQty));
+
      OrderType type = it->second.type;
- 
+
      // Remove and reinsert with new parameters
      cancelOrder(id);
      addOrder(Order(id, type, newPrice, newQty, newTimestamp));
@@ -115,15 +127,19 @@
  bool OrderBook::cancelOrder(int id)
  {
      auto it = orderIndex.find(id);
-     if (it == orderIndex.end())
+     if (it == orderIndex.end()) {
+         g_logger.warn("Cannot cancel order - Order ID " + std::to_string(id) + " not found");
          return false;
- 
+     }
+
+     g_logger.debug("Cancelling order ID: " + std::to_string(id));
+
      auto [type, orderIt] = it->second;
      if (type == OrderType::BUY)
          bids.erase(orderIt);
      else
          asks.erase(orderIt);
- 
+
      orderIndex.erase(it);
      return true;
  }
@@ -156,13 +172,18 @@
      int qty = std::min(buy.quantity, sell.quantity);
      double px = sell.price;
      long t = std::max(buy.timestamp, sell.timestamp);
- 
+
      trades.emplace_back(buy.id, sell.id, px, qty, t);
- 
+
+     g_logger.info("Trade executed - Buy ID: " + std::to_string(buy.id) + 
+                   ", Sell ID: " + std::to_string(sell.id) + 
+                   ", Price: $" + std::to_string(px) + 
+                   ", Quantity: " + std::to_string(qty));
+
      buy.quantity -= qty;
      sell.quantity -= qty;
      totalVolumeTraded += qty;
- 
+
      if (autoExport)
      {
          exportTradesCSV();
@@ -227,7 +248,7 @@
      std::ofstream out(filename);
      if (!out.is_open())
      {
-         std::cerr << "Error: Could not open file " << filename << "\n";
+         g_logger.error("Could not open file: " + filename);
          return;
      }
  
@@ -249,7 +270,7 @@
      std::string filename = makeTimestampedFilename(exportDir, baseName);
      std::ofstream out(filename);
      if (!out.is_open()) {
-         std::cerr << "Error: Could not open file " << filename << "\n";
+         g_logger.error("Could not open file: " + filename);
          return;
      }
  
