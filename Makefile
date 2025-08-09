@@ -20,13 +20,13 @@ LDFLAGS   ?=
 # ------------------------------
 # Source files
 # ------------------------------
-SRC        = src/main.cpp src/order.cpp src/order_book.cpp
+SRC        = src/main.cpp src/order.cpp src/order_book.cpp src/logger.cpp
 TARGET     = lob
 
 # ------------------------------
 # GoogleTest settings
 # ------------------------------
-TEST_SRC     = tests/test_order_book.cpp src/order.cpp src/order_book.cpp
+TEST_SRC     = tests/test_order_book.cpp src/order.cpp src/order_book.cpp src/logger.cpp
 TEST_TARGET  = test_lob
 GTEST_DIR   ?= /opt/homebrew/Cellar/googletest/1.17.0/
 GTEST_FLAGS  = -I$(GTEST_DIR)/include -L$(GTEST_DIR)/lib -lgtest -lgtest_main -pthread
@@ -91,8 +91,8 @@ $(TEST_TARGET): $(TEST_SRC)
 # Build stress binary
 stress: CXXFLAGS += -O3 -DNDEBUG
 stress: TARGET_STRESS = stress
-stress: tests/stress.cpp src/order.cpp src/order_book.cpp
-	$(CXX) $(CXXFLAGS) -Iinclude -o $(TARGET_STRESS) tests/stress.cpp src/order.cpp src/order_book.cpp
+stress: tests/stress.cpp src/order.cpp src/order_book.cpp src/logger.cpp
+	$(CXX) $(CXXFLAGS) -Iinclude -o $(TARGET_STRESS) tests/stress.cpp src/order.cpp src/order_book.cpp src/logger.cpp
 
 # Run stress test with default 2M orders
 stress-run: stress
