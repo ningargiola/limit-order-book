@@ -1,4 +1,4 @@
-name: C++ CI
+name: C++ Build & Test
 
 on:
   push:
@@ -11,20 +11,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
-          sudo apt update
-          sudo apt install -y g++ make cmake libgtest-dev python3 python3-pip
-          cd /usr/src/gtest
-          sudo cmake .
-          sudo make
-          sudo cp *.a /usr/lib
+          sudo apt-get update
+          sudo apt-get install -y g++ make cmake libgtest-dev python3 python3-pip
 
-      - name: Build project
+      - name: Build main binary (Release)
         run: make release
 
-      - name: Run unit tests
+      - name: Build tests
         run: make test GTEST_DIR=/usr
+
+      - name: Run unit tests
+        run: ./test_lob
+
+      - name: Run benchmarks
+        run: |
+          make bench ORDERS=1000000 > benchmark_results.txt
+          cat benchmark_results.txt
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: benchmark_results.txt
