@@ -1,23 +1,40 @@
 # Limit Order Book Matching Engine
 
-This is a lightweight C++ project that implements a basic limit order book. The goal was to build something fast and extensible that gets the core functionality right: matching, canceling, modifying, and tracking volume. It's still early, but this covers the essentials.
+This is my high-performance C++17 Limit Order Book implementation. The aim was to build something lean, solid, and fast — with order matching, modifications, cancellations, and trade tracking by price-time priority — while keeping it flexible for future upgrades.
 
 ---
 
 ## How to Build & Run
 
 ```bash
-make
-./lob
+# Build
+make debug        # symbols, no optimizations
+make release      # optimized
+
+# Run interactive CLI
+make run          # builds release then ./lob
+
+# Synthetic benchmark (BENCH command via main)
+make bench ORDERS=2000000
+
+# Stress harness (standalone, fastest path)
+make stress-run                       # default count (2M)
+make stress-run-custom ORDERS=5000000 # custom count
+
+# Unit + integration tests (GoogleTest)
+make test         # uses GTEST_DIR from Makefile (override with GTEST_DIR=/path)
+
+# Live feed from Binance (WebSocket) -> engine
+make feed
 ```
 
 ---
 
-## What It Does (Current Test Run)
+## Example Run
 
-It runs a short hardcoded simulation (see `main.cpp`) to verify basic behaviors:
+Interactive example:
 
-```text
+```
 BUY 100 10
 SELL 99 5
 SELL 99 5
@@ -44,29 +61,37 @@ Total Volume Traded: 15 units
 
 ---
 
-## Current Features
+## Features
 
-* Price-time priority matching (FIFO per price level)
-* Partial fills handled correctly
-* Order insertion, cancelation, and modification by ID
-* Prints current order book by price
+* FIFO matching within price levels
+* Partial fill support
+* Add, cancel, and modify orders by ID
+* Prints current order book
 * Tracks total matched volume
+* CSV export for trades and snapshots
+* Benchmark mode for throughput
+* Live Binance feed integration
+* Unit and stress testing
+
+---
+
+## Benchmarks
+
+**Synthetic Benchmark Mode:**
+
+* **1M orders** → \~1.09M trades/sec
+* **2M orders** (optimized build) → \~4.21M trades/sec
+* **2M orders** (current config with logging/tests) → \~1.01M trades/sec
 
 ---
 
 ## Roadmap
 
-* Trade history log (ID, price, qty, timestamp)
-* Status tracking per order (e.g., filled, active, canceled)
-* Performance testing: how fast can it match a million orders?
-* Persistent book saving/loading
-* Ability to feed in commands from a file
-* Hook up a basic frontend to view book in real time
-* Export to CSV or JSON for analysis
-* Eventually rewrite internals to avoid STL and heap allocations
-* Parallel or lock-free version for faster throughput
-* Simulate realistic order flow using simple AI behaviors
-* Optional AI-driven volume prediction (purely experimental)
+* Per-order status tracking (active, filled, canceled)
+* Persistent book storage
+* Real-time frontend dashboard
+* More realistic synthetic flow for stress testing
+* Lock-free/parallelized engine experiments
 
 ---
 
@@ -75,11 +100,16 @@ Total Volume Traded: 15 units
 ```bash
 ├── include/
 │   ├── order.h
-│   └── order_book.h
+│   ├── order_book.h
+│   └── trade.h
 ├── src/
 │   ├── main.cpp
 │   ├── order.cpp
 │   └── order_book.cpp
+├── tests/
+│   ├── test_order_book.cpp
+│   └── stress.cpp
+├── ws_feeder.py
 ├── Makefile
 └── README.md
 ```
@@ -88,6 +118,4 @@ Total Volume Traded: 15 units
 
 ## Notes
 
-If you're testing or messing with the logic, just edit the `commands` list inside `main.cpp`. You can also adapt it to read from a file for larger runs.
-
----
+You can tweak logic or run specific scenarios by editing commands in `main.cpp` or piping in a file. Use `bench` for raw speed tests and `feed` for live market integration checks.
